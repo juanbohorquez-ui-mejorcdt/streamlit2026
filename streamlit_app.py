@@ -1,17 +1,50 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import base64
+import os
 
 # 1. CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(page_title="Dashboard Mejor CDT", layout="wide")
 
-# Estilos globales
-st.markdown("""
+# --- FUNCIÓN PARA CARGAR IMAGEN LOCAL ---
+def get_base64_image(image_path):
+    try:
+        with open(image_path, "rb") as img_file:
+            return base64.b64encode(img_file.read()).decode()
+    except Exception as e:
+        return None
+
+# RUTA DE TU LOGO (Asegúrate de que la ruta sea correcta)
+# Uso "/" en lugar de "\" para evitar errores de escape en Python
+path_logo = "streamlit2026/MCDT.png" 
+img_base64 = get_base64_image(path_logo)
+
+# Estilos globales y corrección de espacios
+# Si la imagen existe, la ponemos en el contenedor, si no, mostramos un aviso en consola
+logo_html = f'<img src="data:image/png;base64,{img_base64}" width="180">' if img_base64 else ""
+
+st.markdown(f"""
     <style>
-    .stApp { background-color: #F8F9FA; }
-    h1, h2, h3 { color: #111BFF !important; font-family: 'Roboto', sans-serif; }
+    .stApp {{ background-color: #F8F9FA; }}
+    h1, h2, h3 {{ color: #111BFF !important; font-family: 'Roboto', sans-serif; }}
     
-    .top-card {
+    /* LOGO POSICIONADO ABSOLUTO */
+    .logo-container {{
+        position: absolute;
+        top: -45px;
+        right: 20px;
+        z-index: 1000;
+    }}
+
+    /* ELIMINAR ESPACIOS BLANCOS ENTRE FILAS */
+    [data-testid="stVerticalBlock"] > div {{
+        gap: 0.5rem !important;
+    }}
+    
+    .block-container {{ padding-top: 2rem; }}
+
+    .top-card {{
         background-color: white; 
         padding: 15px; 
         border-radius: 12px;
@@ -21,15 +54,19 @@ st.markdown("""
         display: flex;
         flex-direction: column;
         justify-content: center;
-    }
+    }}
     
-    .leads-table { width: 100%; border-collapse: collapse; font-family: sans-serif; color: #000000; }
-    .leads-table td { padding: 4px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }
-    .val { text-align: right; font-weight: bold; }
-    .change { font-size: 10px; font-weight: bold; margin-left: 5px; }
-    .down { color: #FF4B4B; }
-    .up { color: #00CA67; }
+    .leads-table {{ width: 100%; border-collapse: collapse; font-family: sans-serif; color: #000000; }}
+    .leads-table td {{ padding: 4px 0; border-bottom: 1px solid #F0F0F0; font-size: 13px; }}
+    .val {{ text-align: right; font-weight: bold; }}
+    .change {{ font-size: 10px; font-weight: bold; margin-left: 5px; }}
+    .down {{ color: #FF4B4B; }}
+    .up {{ color: #00CA67; }}
     </style>
+
+    <div class="logo-container">
+        {logo_html}
+    </div>
     """, unsafe_allow_html=True)
 
 # 2. FUNCIÓN GRÁFICO CIRCULAR
@@ -61,7 +98,7 @@ def progress_circle(nombre, porcentaje, monto_actual, meta, color="#111BFF"):
         </div>
     </div>
     """
-    return st.components.v1.html(html_code, height=450)
+    return st.components.v1.html(html_code, height=430)
 
 # 3. DATOS
 datos_equipos = {
@@ -72,7 +109,7 @@ datos_equipos = {
 }
 
 # 4. HEADER
-st.markdown("<h1 style='text-align: center;'>🚀 DASHBOARD - MEJOR CDT</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; margin-bottom: 0px;'>🚀 DASHBOARD - MEJOR CDT</h1>", unsafe_allow_html=True)
 
 # FILA SUPERIOR
 c1, c2, c3 = st.columns([1.2, 2.5, 1])
@@ -109,9 +146,10 @@ with c3:
         </div>
     """, unsafe_allow_html=True)
 
-st.divider()
+st.markdown('<div style="margin-top: -15px; margin-bottom: 5px; border-top: 1px solid #eee;"></div>', unsafe_allow_html=True)
 
-# 5. FILA DE EQUIPOS (CORREGIDO: 5 columnas iguales)
+# 5. FILA DE EQUIPOS
+st.markdown('<div style="margin-top: -15px;">', unsafe_allow_html=True)
 cols_equipo = st.columns(5) 
 
 for i, (nombre, info) in enumerate(datos_equipos.items()):
@@ -119,7 +157,6 @@ for i, (nombre, info) in enumerate(datos_equipos.items()):
     with cols_equipo[i]:
         progress_circle(nombre, porcentaje, info["actual"], info["meta"], info["color"])
 
-# TERMÓMETRO (Columna 5, mismo ancho y alto)
 with cols_equipo[4]:
     monto_hoy = sum(e["actual"] for e in datos_equipos.values())
     porcentaje_diario = 84
@@ -129,26 +166,22 @@ with cols_equipo[4]:
                 <div style="color: #111BFF; font-weight: 900; font-size: 18px;">${monto_hoy:,.0f}</div>
                 <div style="color: #888; font-size: 10px; text-transform: uppercase;">Acumulado Hoy</div>
             </div>
-            
             <div style="color: #111BFF; font-weight: 800; font-size: 13px; margin: 5px 0;">META DIARIA</div>
-
             <div style="height: 160px; width: 30px; background: #EDEEFF; border-radius: 20px; position: relative; overflow: hidden; display: flex; flex-direction: column-reverse; border: 1px solid #D0D5FF;">
                 <div style="height: {porcentaje_diario}%; background: linear-gradient(0deg, #111BFF, #00CA67); width: 100%;"></div>
             </div>
-            
             <div style="width: 65px; height: 65px; background: #111BFF; border-radius: 50%; border: 4px solid white; color: white; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 16px; box-shadow: 0 6px 12px rgba(17,27,255,0.3); margin-top: -35px; z-index: 10;">
                 {porcentaje_diario}%
             </div>
-            
             <div style="background: #F8F9FF; padding: 10px; border-radius: 8px; font-size: 11px; font-weight: bold; color: #555; border: 1px solid #DDD; width: 100%; box-sizing: border-box;">
                 Meta: $2,830M
             </div>
         </div>
     """)
-
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # 6. GRÁFICOS INFERIORES
+st.divider()
 df_mock = pd.DataFrame({"Banco": ["KOA", "Coltef.", "Credif.", "Finan.", "Bancam."], "Val": [67, 21, 5, 4, 1]})
 df_bar = pd.DataFrame({"Ene": ["13", "14", "15", "16", "17"], "Monto": [2100, 1700, 900, 1650, 20]})
 
@@ -162,8 +195,7 @@ def update_fig_style(fig, title, is_pie=False):
         margin=dict(t=60, b=20, l=10, r=10),
         legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5)
     )
-    if is_pie:
-        fig.update_traces(textposition='inside', textinfo='percent+label')
+    if is_pie: fig.update_traces(textposition='inside', textinfo='percent+label')
     return fig
 
 with inf_c1:
